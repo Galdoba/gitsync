@@ -83,11 +83,8 @@ func (s Syncer) pull(gs gitstatus.GitStatus) error {
 	}
 	statusLines := strings.SplitSeq(string(data), "\n")
 	for line := range statusLines {
-		if strings.Contains("Already up to date.", line) {
-			return fmt.Errorf("refused: local repo is up to date")
-		}
+		fmt.Println(line)
 	}
-	fmt.Fprintf(os.Stderr, string(data))
 	return nil
 }
 
@@ -99,24 +96,25 @@ func (s Syncer) push(gs gitstatus.GitStatus) error {
 		return fmt.Errorf("refused: no local changes detected")
 	}
 	cmdAdd := exec.Command("git", "add", "--all")
+	data, err := cmdAdd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to get git output: %v", err)
+	}
+	fmt.Println(string(data))
 	if err := cmdAdd.Run(); err != nil {
 		return fmt.Errorf("failed to run 'git add' for %v", s.RepoName)
 	}
 	cmdCommit := exec.Command("git", "commit", "-m", time.Now().Format(time.DateTime))
-	if err := cmdCommit.Run(); err != nil {
-		return fmt.Errorf("failed to run 'git commit' for %v", s.RepoName)
-	}
-	cmdPush := exec.Command("git", "push")
-	data, err := cmdPush.CombinedOutput()
+	data, err = cmdCommit.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to get git output: %v", err)
 	}
-	// statusLines := strings.Split(string(data), "\n")
-	// for _, line := range statusLines {
-	// 	if strings.Contains("Already up to date.", line) {
-	// 		return fmt.Errorf("refused: local repo is up to date")
-	// 	}
-	// }
-	fmt.Fprintf(os.Stderr, string(data))
+	fmt.Println(string(data))
+	cmdPush := exec.Command("git", "push")
+	data, err = cmdPush.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to get git output: %v", err)
+	}
+	fmt.Println(string(data))
 	return nil
 }

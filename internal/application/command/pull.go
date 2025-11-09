@@ -3,8 +3,11 @@ package command
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/Galdoba/gitsync/internal/application/setup"
+	"github.com/Galdoba/gitsync/internal/domain/values/syncer"
 	"github.com/urfave/cli/v3"
 )
 
@@ -66,9 +69,20 @@ func pull(actx *setup.AppContext) cli.ActionFunc {
 	return func(ctx context.Context, c *cli.Command) error {
 		cfg := actx.Config
 		logger := actx.Logger
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get home directory: %v", err)
+		}
 		for repo, path := range cfg.TrackRepos {
-			fmt.Sprintf("will pull from %v to %v\n", repo, path)
-			logger.Infof("logging %v", repo)
+			path = strings.ReplaceAll(path, "~", home)
+			s := syncer.NewSync(repo, path)
+			switch err := s.Pull(); err {
+			case nil:
+				logger.Infof("%v pulled to %v", repo, path)
+			default:
+				logger.Warnf("failed to pull %v: %v", repo, err.Error())
+				fmt.Println(err)
+			}
 		}
 
 		return nil

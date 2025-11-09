@@ -1,4 +1,4 @@
 #!/bin/bash
 #
-git status && echo success
-git status || echo failed
+#git status && echo success
+#git status || echo failed
